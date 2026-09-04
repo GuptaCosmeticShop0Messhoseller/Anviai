@@ -4,15 +4,13 @@ const chat = document.getElementById("chat");
 
 function addMessage(text, type) {
   const div = document.createElement("div");
-
   div.className = "message " + type;
   div.textContent = text;
-
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }
 
-function sendMessage() {
+async function sendMessage() {
   const text = input.value.trim();
 
   if (!text) return;
@@ -20,13 +18,45 @@ function sendMessage() {
   addMessage(text, "user");
   input.value = "";
 
-  setTimeout(() => {
+  const loading = document.createElement("div");
+  loading.className = "message ai";
+  loading.textContent = "AnviAI soch raha hai...";
+  chat.appendChild(loading);
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text
+      })
+    });
+
+    const data = await response.json();
+
+    loading.remove();
+
+    if (data.reply) {
+      addMessage(data.reply, "ai");
+    } else {
+      addMessage(
+        "Sorry, abhi AI response nahi mil raha hai.",
+        "ai"
+      );
+    }
+
+  } catch (error) {
+    loading.remove();
+
     addMessage(
-      "AnviAI: Aapka message mil gaya.\n\n" +
-      "Real AI response ke liye AI API/backend connect karna hoga.",
+      "Server connect nahi ho raha. Backend deploy karna baaki hai.",
       "ai"
     );
-  }, 600);
+
+    console.error(error);
+  }
 }
 
 send.addEventListener("click", sendMessage);
